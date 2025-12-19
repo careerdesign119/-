@@ -1,158 +1,158 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>모의 투자 플랫폼</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>모의 투자 플랫폼</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <!-- 접속 유형 선택 모달 -->
-    <div id="entryModal" class="modal">
-        <div class="modal-content">
-            <h2>접속 유형 선택</h2>
-            <div class="button-group">
-                <button id="adminBtn" class="modal-btn">관리자</button>
-                <button id="companyBtn" class="modal-btn">기업</button>
-            </div>
-        </div>
+  <!-- 접속 유형 선택 모달 -->
+  <div id="entryModal" class="modal">
+    <div class="modal-content">
+      <h2>접속 유형 선택</h2>
+      <div class="button-group">
+        <button id="adminBtn" class="modal-btn">관리자</button>
+        <button id="companyBtn" class="modal-btn">기업</button>
+      </div>
     </div>
+  </div>
 
-    <!-- 관리자 비밀번호 모달 -->
-    <div id="passwordModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <h2>관리자 비밀번호 입력</h2>
-            <input type="password" id="passwordInput" placeholder="비밀번호를 입력하세요">
-            <p id="passwordError" class="error-text"></p>
-            <div class="button-group">
-                <button id="passwordSubmit" class="modal-btn">확인</button>
-                <button id="passwordCancel" class="modal-btn secondary">취소</button>
-            </div>
-        </div>
+  <!-- 관리자 비밀번호 모달 -->
+  <div id="passwordModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h2>관리자 비밀번호 입력</h2>
+      <input type="password" id="passwordInput" placeholder="비밀번호를 입력하세요" />
+      <p id="passwordError" class="error-text"></p>
+      <div class="button-group">
+        <button id="passwordSubmit" class="modal-btn">확인</button>
+        <button id="passwordCancel" class="modal-btn secondary">취소</button>
+      </div>
     </div>
+  </div>
 
-    <!-- 토스트 -->
-    <div id="toast" class="toast"></div>
+  <!-- 토스트 -->
+  <div id="toast" class="toast"></div>
 
-    <!-- 관리자 페이지 -->
-    <div id="adminPage" class="page" style="display:none;">
-        <div class="container">
-            <h1>관리자 페이지</h1>
-            
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="companies">기업 목록</button>
-                <button class="tab-btn" data-tab="teams">팀 목록</button>
-                <button class="tab-btn" data-tab="investments">투자내역</button>
-            </div>
+  <!-- 관리자 페이지 -->
+  <div id="adminPage" class="page" style="display:none;">
+    <div class="container">
+      <h1>관리자 페이지</h1>
 
-            <!-- 기업 목록 탭 -->
-            <div id="companiesTab" class="tab-content active">
-                <div class="section-header">
-                    <h2>기업 목록 관리</h2>
-                    <button id="addCompanyBtn" class="add-btn">+ 행 추가</button>
-                </div>
-                <div class="table-wrapper">
-                    <table id="companiesTable" class="data-table">
-                        <thead>
-                            <tr>
-                                <th>기업명</th>
-                                <th>기본포인트</th>
-                                <th>사용포인트</th>
-                                <th>남은포인트</th>
-                                <th>삭제</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="companies">기업 목록</button>
+        <button class="tab-btn" data-tab="teams">팀 목록</button>
+        <button class="tab-btn" data-tab="investments">투자내역</button>
+      </div>
 
-            <!-- 팀 목록 탭 -->
-            <div id="teamsTab" class="tab-content">
-                <div class="section-header">
-                    <h2>팀 목록 관리</h2>
-                    <button id="addTeamBtn" class="add-btn">+ 행 추가</button>
-                </div>
-                <div class="table-wrapper">
-                    <table id="teamsTable" class="data-table">
-                        <thead>
-                            <tr>
-                                <th>팀명</th>
-                                <th>아이템명</th>
-                                <th>카테고리</th>
-                                <th>한줄소개</th>
-                                <th>상세설명</th>
-                                <th>목표포인트</th>
-                                <th>모인포인트</th>
-                                <th>투자자수</th>
-                                <th>삭제</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- 투자내역 탭 -->
-            <div id="investmentsTab" class="tab-content">
-                <div class="section-header">
-                    <h2>투자내역</h2>
-                    <button id="clearInvestmentsBtn" class="delete-all-btn">투자내역 전체 삭제</button>
-                </div>
-                <div class="table-wrapper">
-                    <table id="investmentsTable" class="data-table">
-                        <thead>
-                            <tr>
-                                <th>일시</th>
-                                <th>기업명</th>
-                                <th>팀명</th>
-                                <th>아이템명</th>
-                                <th>투자금액</th>
-                                <th>삭제</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <button id="saveAdminBtn" class="save-btn">수정</button>
+      <!-- 기업 목록 탭 -->
+      <div id="companiesTab" class="tab-content active">
+        <div class="section-header">
+          <h2>기업 목록 관리</h2>
+          <button id="addCompanyBtn" class="add-btn">+ 행 추가</button>
         </div>
-    </div>
-
-    <!-- 기업 페이지 -->
-    <div id="companyPage" class="page" style="display:none;">
-        <div class="container">
-            <h1>모의 투자 플랫폼</h1>
-            
-            <div class="company-selector">
-                <label for="companySelect">기업 선택:</label>
-                <select id="companySelect">
-                    <option value="">기업을 선택하세요</option>
-                </select>
-            </div>
-
-            <div id="companyInfo" class="company-info" style="display:none;">
-                <div class="info-card">
-                    <div class="info-item">
-                        <span class="label">기본포인트:</span>
-                        <span id="basePoints" class="value">0</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">사용포인트:</span>
-                        <span id="spentPoints" class="value">0</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">남은포인트:</span>
-                        <span id="remainPoints" class="value">0</span>
-                    </div>
-                </div>
-            </div>
-
-            <div id="teamsContainer" class="teams-container"></div>
+        <div class="table-wrapper">
+          <table id="companiesTable" class="data-table">
+            <thead>
+              <tr>
+                <th>기업명</th>
+                <th>기본포인트</th>
+                <th>사용포인트</th>
+                <th>남은포인트</th>
+                <th>삭제</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
-    </div>
+      </div>
 
-    <script src="script.js"></script>
+      <!-- 팀 목록 탭 -->
+      <div id="teamsTab" class="tab-content">
+        <div class="section-header">
+          <h2>팀 목록 관리</h2>
+          <button id="addTeamBtn" class="add-btn">+ 행 추가</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="teamsTable" class="data-table">
+            <thead>
+              <tr>
+                <th>팀명</th>
+                <th>아이템명</th>
+                <th>카테고리</th>
+                <th>한줄소개</th>
+                <th>상세설명</th>
+                <th>목표포인트</th>
+                <th>모인포인트</th>
+                <th>투자자수</th>
+                <th>삭제</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 투자내역 탭 -->
+      <div id="investmentsTab" class="tab-content">
+        <div class="section-header">
+          <h2>투자내역</h2>
+          <button id="clearInvestmentsBtn" class="delete-all-btn">투자내역 전체 삭제</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="investmentsTable" class="data-table">
+            <thead>
+              <tr>
+                <th>일시</th>
+                <th>기업명</th>
+                <th>팀명</th>
+                <th>아이템명</th>
+                <th>투자금액</th>
+                <th>삭제</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button id="saveAdminBtn" class="save-btn">수정</button>
+    </div>
+  </div>
+
+  <!-- 기업 페이지 -->
+  <div id="companyPage" class="page" style="display:none;">
+    <div class="container">
+      <h1>모의 투자 플랫폼</h1>
+
+      <div class="company-selector">
+        <label for="companySelect">기업 선택:</label>
+        <select id="companySelect">
+          <option value="">기업을 선택하세요</option>
+        </select>
+      </div>
+
+      <div id="companyInfo" class="company-info" style="display:none;">
+        <div class="info-card">
+          <div class="info-item">
+            <span class="label">기본포인트:</span>
+            <span id="basePoints" class="value">0</span>
+          </div>
+          <div class="info-item">
+            <span class="label">사용포인트:</span>
+            <span id="spentPoints" class="value">0</span>
+          </div>
+          <div class="info-item">
+            <span class="label">남은포인트:</span>
+            <span id="remainPoints" class="value">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="teamsContainer" class="teams-container"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

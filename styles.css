@@ -256,3 +256,49 @@ h2{ margin:0; }
 .investment-input.error{
   border-color:#ef4444;
 }
+
+.field { display:flex; flex-direction:column; gap:6px; }
+.field-label{ font-size:12px; color:#6b7280; }
+.field-input{ padding:10px 12px; border-radius:12px; border:1px solid #e5e7eb; }
+
+.company-fixed{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:16px;
+  padding:12px 14px;
+  margin:12px 0;
+}
+.company-fixed-label{ font-size:14px; color:#111827; }
+.ghost-btn{
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid #e5e7eb;
+  background:#f9fafb;
+  cursor:pointer;
+}
+.ghost-btn:hover{ background:#f3f4f6; }
+
+.my-invest{
+  margin-top:12px;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:16px;
+  padding:12px 14px;
+}
+.my-invest-title{ font-weight:800; margin-bottom:10px; }
+.my-invest-list{ display:flex; flex-direction:column; gap:8px; }
+.my-invest-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:10px 12px;
+}
+.mi-team{ color:#111827; font-weight:600; }
+.mi-amt{ color:#111827; font-weight:800; }

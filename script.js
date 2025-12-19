@@ -1,4 +1,3 @@
-// 상수
 const ADMIN_PASSWORD = "123456789";
 const STORAGE_KEYS = {
   companies: "mockFunding_companies",
@@ -6,7 +5,6 @@ const STORAGE_KEYS = {
   investments: "mockFunding_investments",
 };
 
-// 초기 샘플 데이터
 const SAMPLE_DATA = {
   companies: [
     { name: "테크스타트", basePoints: 100000, spentPoints: 0 },
@@ -24,31 +22,10 @@ const SAMPLE_DATA = {
       raisedPoints: 0,
       backerCount: 0,
     },
-    {
-      teamName: "그린에너지",
-      itemName: "태양광 충전 스테이션",
-      category: "친환경",
-      oneLine: "어디서나 친환경 에너지로 충전하세요",
-      detail: "태양광을 활용한 이동식 충전 스테이션으로 친환경 에너지 사용을 확대합니다.",
-      goalPoints: 80000,
-      raisedPoints: 0,
-      backerCount: 0,
-    },
-    {
-      teamName: "헬스케어",
-      itemName: "스마트 건강관리 앱",
-      category: "헬스케어",
-      oneLine: "개인 맞춤형 건강관리 솔루션",
-      detail: "AI 기반 건강 데이터 분석으로 개인에게 최적화된 건강관리 서비스를 제공합니다.",
-      goalPoints: 60000,
-      raisedPoints: 0,
-      backerCount: 0,
-    },
   ],
   investments: [],
 };
 
-// 로컬스토리지 초기화
 function initStorage() {
   if (!localStorage.getItem(STORAGE_KEYS.companies)) {
     localStorage.setItem(STORAGE_KEYS.companies, JSON.stringify(SAMPLE_DATA.companies));
@@ -60,58 +37,131 @@ function initStorage() {
     localStorage.setItem(STORAGE_KEYS.investments, JSON.stringify(SAMPLE_DATA.investments));
   }
 }
-
-// 데이터 가져오기
 function getData(key) {
   const data = localStorage.getItem(STORAGE_KEYS[key]);
   return data ? JSON.parse(data) : [];
 }
-
-// 데이터 저장하기
 function saveData(key, data) {
   localStorage.setItem(STORAGE_KEYS[key], JSON.stringify(data));
 }
-
-// 토스트 표시
 function showToast(message, isError = false) {
   const toast = document.getElementById("toast");
   toast.textContent = message;
   toast.className = "toast show" + (isError ? " error" : "");
-  setTimeout(() => {
-    toast.className = "toast";
-  }, 1000);
+  setTimeout(() => (toast.className = "toast"), 1000);
 }
 
-// 모달/페이지 참조
+/** =========================
+ *  집계 재계산 (투자내역이 '진실')
+ *  - companies.spentPoints = 투자내역 합
+ *  - teams.raisedPoints   = 투자내역 합
+ *  - teams.backerCount    = 팀에 투자한 고유 기업 수
+ * ========================= */
+function recomputeAggregatesFromInvestments() {
+  const companies = getData("companies");
+  const teams = getData("teams");
+  const investments = getData("investments");
+
+  const spentByCompany = new Map();
+  const raisedByTeam = new Map();
+  const uniqueBackersByTeam = new Map(); // teamName -> Set(companyName)
+
+  for (const inv of investments) {
+    const c = String(inv.companyName || "").trim();
+    const t = String(inv.teamName || "").trim();
+    const amt = Number(inv.amount || 0);
+    if (!c || !t || !Number.isFinite(amt)) continue;
+
+    spentByCompany.set(c, (spentByCompany.get(c) || 0) + amt);
+    raisedByTeam.set(t, (raisedByTeam.get(t) || 0) + amt);
+
+    if (!uniqueBackersByTeam.has(t)) uniqueBackersByTeam.set(t, new Set());
+    uniqueBackersByTeam.get(t).add(c);
+  }
+
+  for (const c of companies) {
+    const name = String(c.name || "").trim();
+    c.spentPoints = spentByCompany.get(name) || 0;
+  }
+
+  for (const t of teams) {
+    const tn = String(t.teamName || "").trim();
+    t.raisedPoints = raisedByTeam.get(tn) || 0;
+    t.backerCount = uniqueBackersByTeam.has(tn) ? uniqueBackersByTeam.get(tn).size : 0;
+  }
+
+  saveData("companies", companies);
+  saveData("teams", teams);
+}
+
+/** ===== 화면 참조 ===== */
 const entryModal = document.getElementById("entryModal");
 const passwordModal = document.getElementById("passwordModal");
 const adminPage = document.getElementById("adminPage");
 const companyPage = document.getElementById("companyPage");
 
-// 초기: entry 모달 보이기
+const entryStepType = document.getElementById("entryStepType");
+const entryStepCompany = document.getElementById("entryStepCompany");
+const entryCompanySelect = document.getElementById("entryCompanySelect");
+
+let selectedCompanyName = "";
+
+/** ===== 시작 ===== */
+initStorage();
+recomputeAggregatesFromInvestments();
+
 entryModal.style.display = "flex";
 
-// 접속 유형 선택
+/** ===== entry 모달 ===== */
 document.getElementById("adminBtn").addEventListener("click", () => {
   entryModal.style.display = "none";
   passwordModal.style.display = "flex";
 });
 
 document.getElementById("companyBtn").addEventListener("click", () => {
-  entryModal.style.display = "none";
-  companyPage.style.display = "block";
-  initCompanyPage(true);
+  entryStepType.style.display = "none";
+  entryStepCompany.style.display = "block";
+
+  const companies = getData("companies");
+  entryCompanySelect.innerHTML = `<option value="">기업을 선택하세요</option>`;
+  companies.forEach((c) => {
+    const opt = document.createElement("option");
+    opt.value = c.name;
+    opt.textContent = c.name;
+    entryCompanySelect.appendChild(opt);
+  });
 });
 
-// 비번 모달 취소
+document.getElementById("entryCompanyBack").addEventListener("click", () => {
+  entryStepCompany.style.display = "none";
+  entryStepType.style.display = "block";
+  entryCompanySelect.value = "";
+});
+
+document.getElementById("entryCompanyEnter").addEventListener("click", () => {
+  const name = entryCompanySelect.value;
+  if (!name) return showToast("기업을 선택해주세요", true);
+
+  selectedCompanyName = name;
+
+  entryModal.style.display = "none";
+  companyPage.style.display = "block";
+  initCompanyPageLocked(selectedCompanyName);
+});
+
+/** ===== 비번 모달 ===== */
 document.getElementById("passwordCancel").addEventListener("click", () => {
   passwordModal.style.display = "none";
   entryModal.style.display = "flex";
+
+  entryStepCompany.style.display = "none";
+  entryStepType.style.display = "block";
+  entryCompanySelect.value = "";
+
   document.getElementById("passwordInput").value = "";
   document.getElementById("passwordError").textContent = "";
 });
 
-// 비번 확인
 document.getElementById("passwordSubmit").addEventListener("click", () => {
   const input = document.getElementById("passwordInput").value;
   if (input === ADMIN_PASSWORD) {
@@ -123,12 +173,11 @@ document.getElementById("passwordSubmit").addEventListener("click", () => {
   }
 });
 
-// 엔터로 확인
 document.getElementById("passwordInput").addEventListener("keypress", (e) => {
   if (e.key === "Enter") document.getElementById("passwordSubmit").click();
 });
 
-// 탭 전환
+/** ===== 탭 전환 ===== */
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     const tabName = btn.dataset.tab;
@@ -141,61 +190,55 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
   });
 });
 
-// 관리자 페이지 초기화
+/** =========================
+ *  관리자 페이지
+ * ========================= */
 function initAdminPage() {
+  // 관리자 들어올 때마다 투자내역 기준으로 집계 최신화
+  recomputeAggregatesFromInvestments();
   renderCompaniesTable();
   renderTeamsTable();
   renderInvestmentsTable();
 }
 
-// 기업 목록 렌더링
+/** ✅ 기업목록: spent/remain 수정 불가 */
 function renderCompaniesTable() {
+  recomputeAggregatesFromInvestments();
   const companies = getData("companies");
   const tbody = document.querySelector("#companiesTable tbody");
   tbody.innerHTML = "";
 
   companies.forEach((company, index) => {
-    const row = document.createElement("tr");
-    const remainPoints = (company.basePoints || 0) - (company.spentPoints || 0);
+    const spent = Number(company.spentPoints || 0);
+    const base = Number(company.basePoints || 0);
+    const remain = base - spent;
 
+    const row = document.createElement("tr");
     row.innerHTML = `
       <td><input type="text" value="${escapeHtml(company.name)}" data-field="name" data-index="${index}"></td>
-      <td><input type="number" value="${company.basePoints ?? 0}" data-field="basePoints" data-index="${index}"></td>
-      <td><input type="number" value="${company.spentPoints ?? 0}" data-field="spentPoints" data-index="${index}"></td>
-      <td><input type="number" value="${remainPoints}" class="readonly" readonly></td>
+      <td><input type="number" value="${base}" data-field="basePoints" data-index="${index}"></td>
+      <td><input type="number" value="${spent}" class="readonly" readonly></td>
+      <td><input type="number" value="${remain}" class="readonly" readonly></td>
       <td><button class="delete-row-btn" data-index="${index}">삭제</button></td>
     `;
     tbody.appendChild(row);
   });
 
-  // 삭제(임시 UI만 변경, 실제 저장은 '수정' 버튼)
   document.querySelectorAll("#companiesTable .delete-row-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const index = parseInt(e.target.dataset.index, 10);
       const companies = getData("companies");
       companies.splice(index, 1);
-      // 저장은 안 하고 화면만 반영 (수정 버튼에서 저장)
       saveData("companies", companies);
+
+      // 기업 삭제해도 투자내역은 남아있을 수 있으니 정합 재계산
+      recomputeAggregatesFromInvestments();
       renderCompaniesTable();
-    });
-  });
-
-  // 남은포인트 자동 계산
-  document.querySelectorAll("#companiesTable input[data-field]").forEach((input) => {
-    input.addEventListener("input", (e) => {
-      const row = e.target.closest("tr");
-      const baseInput = row.querySelector("input[data-field='basePoints']");
-      const spentInput = row.querySelector("input[data-field='spentPoints']");
-      const remainInput = row.querySelector(".readonly");
-
-      const base = parseInt(baseInput.value, 10) || 0;
-      const spent = parseInt(spentInput.value, 10) || 0;
-      remainInput.value = base - spent;
+      renderInvestmentsTable();
     });
   });
 }
 
-// 기업 추가
 document.getElementById("addCompanyBtn").addEventListener("click", () => {
   const companies = getData("companies");
   companies.push({ name: "", basePoints: 0, spentPoints: 0 });
@@ -203,8 +246,9 @@ document.getElementById("addCompanyBtn").addEventListener("click", () => {
   renderCompaniesTable();
 });
 
-// 팀 목록 렌더링
+/** ✅ 팀목록: raised/backer 수정 불가 */
 function renderTeamsTable() {
+  recomputeAggregatesFromInvestments();
   const teams = getData("teams");
   const tbody = document.querySelector("#teamsTable tbody");
   tbody.innerHTML = "";
@@ -217,9 +261,9 @@ function renderTeamsTable() {
       <td><input type="text" value="${escapeHtml(team.category)}" data-field="category" data-index="${index}"></td>
       <td><input type="text" value="${escapeHtml(team.oneLine)}" data-field="oneLine" data-index="${index}"></td>
       <td><textarea data-field="detail" data-index="${index}">${escapeHtml(team.detail)}</textarea></td>
-      <td><input type="number" value="${team.goalPoints ?? 0}" data-field="goalPoints" data-index="${index}"></td>
-      <td><input type="number" value="${team.raisedPoints ?? 0}" data-field="raisedPoints" data-index="${index}"></td>
-      <td><input type="number" value="${team.backerCount ?? 0}" data-field="backerCount" data-index="${index}"></td>
+      <td><input type="number" value="${Number(team.goalPoints || 0)}" data-field="goalPoints" data-index="${index}"></td>
+      <td><input type="number" value="${Number(team.raisedPoints || 0)}" class="readonly" readonly></td>
+      <td><input type="number" value="${Number(team.backerCount || 0)}" class="readonly" readonly></td>
       <td><button class="delete-row-btn" data-index="${index}">삭제</button></td>
     `;
     tbody.appendChild(row);
@@ -231,12 +275,14 @@ function renderTeamsTable() {
       const teams = getData("teams");
       teams.splice(index, 1);
       saveData("teams", teams);
+
+      recomputeAggregatesFromInvestments();
       renderTeamsTable();
+      renderInvestmentsTable();
     });
   });
 }
 
-// 팀 추가
 document.getElementById("addTeamBtn").addEventListener("click", () => {
   const teams = getData("teams");
   teams.push({
@@ -253,7 +299,7 @@ document.getElementById("addTeamBtn").addEventListener("click", () => {
   renderTeamsTable();
 });
 
-// 투자내역 렌더링
+/** 투자내역 렌더링(삭제 시 집계 연동) */
 function renderInvestmentsTable() {
   const investments = getData("investments");
   const tbody = document.querySelector("#investmentsTable tbody");
@@ -262,7 +308,6 @@ function renderInvestmentsTable() {
   investments.forEach((inv, index) => {
     const row = document.createElement("tr");
     const date = new Date(inv.ts).toLocaleString("ko-KR");
-
     row.innerHTML = `
       <td>${date}</td>
       <td>${escapeHtml(inv.companyName)}</td>
@@ -280,45 +325,53 @@ function renderInvestmentsTable() {
       const investments = getData("investments");
       investments.splice(index, 1);
       saveData("investments", investments);
+
+      // ✅ 투자내역이 바뀌면 집계는 항상 재계산
+      recomputeAggregatesFromInvestments();
       renderInvestmentsTable();
+      renderCompaniesTable();
+      renderTeamsTable();
+
+      showToast("삭제되었습니다");
     });
   });
 }
 
-// 투자내역 전체 삭제
 document.getElementById("clearInvestmentsBtn").addEventListener("click", () => {
-  if (confirm("모든 투자내역을 삭제하시겠습니까?")) {
-    saveData("investments", []);
-    renderInvestmentsTable();
-    showToast("투자내역이 모두 삭제되었습니다");
-  }
+  if (!confirm("모든 투자내역을 삭제하시겠습니까?")) return;
+
+  saveData("investments", []);
+  recomputeAggregatesFromInvestments();
+
+  renderInvestmentsTable();
+  renderCompaniesTable();
+  renderTeamsTable();
+
+  showToast("투자내역이 모두 삭제되었습니다");
 });
 
-// 관리자 수정 버튼: 저장 + 기업페이지 즉시 반영
+/** ✅ 관리자 수정 버튼: 집계값은 건드리지 않음(투자내역이 결정) */
 document.getElementById("saveAdminBtn").addEventListener("click", () => {
-  // 기업 데이터 수집/검증
-  const companies = [];
-  const companyNames = new Set();
   let hasError = false;
 
+  // 기업: name + basePoints만 저장
+  const companies = [];
+  const companyNames = new Set();
   document.querySelectorAll("#companiesTable tbody tr").forEach((row) => {
     const name = row.querySelector("input[data-field='name']").value.trim();
     const basePoints = parseInt(row.querySelector("input[data-field='basePoints']").value, 10) || 0;
-    const spentPoints = parseInt(row.querySelector("input[data-field='spentPoints']").value, 10) || 0;
 
     if (!name) { showToast("기업명을 입력해주세요", true); hasError = true; return; }
     if (companyNames.has(name)) { showToast(`기업명 중복: ${name}`, true); hasError = true; return; }
-    if (basePoints < spentPoints) { showToast(`${name}: 기본포인트가 사용포인트보다 작습니다`, true); hasError = true; return; }
 
     companyNames.add(name);
-    companies.push({ name, basePoints, spentPoints });
+    companies.push({ name, basePoints, spentPoints: 0 }); // spentPoints는 재계산
   });
   if (hasError) return;
 
-  // 팀 데이터 수집/검증
+  // 팀: 기본정보 + goalPoints만 저장
   const teams = [];
   const teamNames = new Set();
-
   document.querySelectorAll("#teamsTable tbody tr").forEach((row) => {
     const teamName = row.querySelector("input[data-field='teamName']").value.trim();
     const itemName = row.querySelector("input[data-field='itemName']").value.trim();
@@ -326,107 +379,85 @@ document.getElementById("saveAdminBtn").addEventListener("click", () => {
     const oneLine = row.querySelector("input[data-field='oneLine']").value.trim();
     const detail = row.querySelector("textarea[data-field='detail']").value.trim();
     const goalPoints = parseInt(row.querySelector("input[data-field='goalPoints']").value, 10) || 0;
-    const raisedPoints = parseInt(row.querySelector("input[data-field='raisedPoints']").value, 10) || 0;
-    const backerCount = parseInt(row.querySelector("input[data-field='backerCount']").value, 10) || 0;
 
     if (!teamName) { showToast("팀명을 입력해주세요", true); hasError = true; return; }
     if (teamNames.has(teamName)) { showToast(`팀명 중복: ${teamName}`, true); hasError = true; return; }
 
     teamNames.add(teamName);
-    teams.push({ teamName, itemName, category, oneLine, detail, goalPoints, raisedPoints, backerCount });
+    teams.push({ teamName, itemName, category, oneLine, detail, goalPoints, raisedPoints: 0, backerCount: 0 });
   });
   if (hasError) return;
 
-  // 저장
   saveData("companies", companies);
   saveData("teams", teams);
 
-  // 즉시 반영(기업 페이지 드롭다운/카드 갱신)
-  initCompanyPage(false);
+  // ✅ 저장 후 투자내역 기준으로 집계 다시 맞춤
+  recomputeAggregatesFromInvestments();
 
-  showToast("적용되었습니다");
-
-  // UI 갱신
   renderCompaniesTable();
   renderTeamsTable();
+  renderInvestmentsTable();
+
+  showToast("적용되었습니다");
 });
 
-// 기업 페이지 초기화
-function initCompanyPage(resetSelection = true) {
-  const companies = getData("companies");
-  const select = document.getElementById("companySelect");
+/** =========================
+ *  기업 페이지(기업 고정)
+ * ========================= */
+function initCompanyPageLocked(companyName) {
+  document.getElementById("companySelectorWrap").style.display = "none";
+  document.getElementById("fixedCompanyName").textContent = companyName;
 
-  const prev = select.value;
-  select.innerHTML = '<option value="">기업을 선택하세요</option>';
+  loadCompanyInfo(companyName);
+  loadTeams(companyName);
+  renderMyInvestSummary(companyName);
 
-  companies.forEach((company) => {
-    const option = document.createElement("option");
-    option.value = company.name;
-    option.textContent = company.name;
-    select.appendChild(option);
-  });
-
-  // change 리스너 중복 방지
-  if (!select.dataset.bound) {
-    select.addEventListener("change", (e) => {
-      const companyName = e.target.value;
-      if (companyName) loadCompanyInfo(companyName);
-      else {
-        document.getElementById("companyInfo").style.display = "none";
-        document.getElementById("teamsContainer").innerHTML = "";
-      }
-    });
-    select.dataset.bound = "1";
-  }
-
-  if (resetSelection) {
-    select.value = "";
-    document.getElementById("companyInfo").style.display = "none";
+  document.getElementById("companyResetBtn").onclick = () => {
+    selectedCompanyName = "";
+    companyPage.style.display = "none";
+    entryModal.style.display = "flex";
+    entryStepCompany.style.display = "none";
+    entryStepType.style.display = "block";
+    entryCompanySelect.value = "";
     document.getElementById("teamsContainer").innerHTML = "";
-  } else {
-    // 가능한 경우 기존 선택 유지
-    if (prev && companies.some((c) => c.name === prev)) {
-      select.value = prev;
-      loadCompanyInfo(prev);
-    }
-  }
+    document.getElementById("companyInfo").style.display = "none";
+    document.getElementById("myInvestSummary").style.display = "none";
+  };
 }
 
-// 기업 정보 로드
 function loadCompanyInfo(companyName) {
+  recomputeAggregatesFromInvestments();
   const companies = getData("companies");
   const company = companies.find((c) => c.name === companyName);
+  if (!company) return showToast("기업 정보를 찾을 수 없습니다", true);
 
-  if (company) {
-    document.getElementById("basePoints").textContent = Number(company.basePoints || 0).toLocaleString();
-    document.getElementById("spentPoints").textContent = Number(company.spentPoints || 0).toLocaleString();
-    document.getElementById("remainPoints").textContent = Number((company.basePoints || 0) - (company.spentPoints || 0)).toLocaleString();
-    document.getElementById("companyInfo").style.display = "block";
-    loadTeams();
-  }
+  const base = Number(company.basePoints || 0);
+  const spent = Number(company.spentPoints || 0);
+  const remain = base - spent;
+
+  document.getElementById("basePoints").textContent = base.toLocaleString();
+  document.getElementById("spentPoints").textContent = spent.toLocaleString();
+  document.getElementById("remainPoints").textContent = remain.toLocaleString();
+  document.getElementById("companyInfo").style.display = "block";
 }
 
-// 팀 목록 로드
-function loadTeams() {
+function loadTeams(companyName) {
+  recomputeAggregatesFromInvestments();
   const teams = getData("teams");
   const container = document.getElementById("teamsContainer");
   container.innerHTML = "";
 
   teams.forEach((team) => {
-    const card = createTeamCard(team);
-    container.appendChild(card);
+    container.appendChild(createTeamCard(team, companyName));
   });
 }
 
-// 팀 카드 생성
-function createTeamCard(team) {
+function createTeamCard(team, companyName) {
   const card = document.createElement("div");
   card.className = "team-card";
 
   const goal = Number(team.goalPoints || 0);
   const raised = Number(team.raisedPoints || 0);
-
-  // goal=0 방어 + 100% 초과 표시 허용
   const percentage = goal > 0 ? Math.round((raised / goal) * 100) : 0;
   const progressWidth = Math.min(Math.max(percentage, 0), 100);
 
@@ -445,7 +476,7 @@ function createTeamCard(team) {
         <span>${percentage}%</span>
       </div>
       <div class="progress-bar-container">
-        <div class="progress-bar" style="width: ${progressWidth}%"></div>
+        <div class="progress-bar" style="width:${progressWidth}%"></div>
       </div>
       <div class="investor-count">투자자: ${Number(team.backerCount || 0)}명</div>
     </div>
@@ -463,7 +494,6 @@ function createTeamCard(team) {
   const input = card.querySelector(".investment-input");
   const errorDiv = card.querySelector(".input-error");
 
-  // ✅ 숫자만 입력되게 "정리" + 에러문구
   input.addEventListener("input", (e) => {
     const raw = e.target.value;
     const cleaned = raw.replace(/[^0-9]/g, "");
@@ -478,89 +508,80 @@ function createTeamCard(team) {
   });
 
   card.querySelector(".invest-btn").addEventListener("click", () => {
-    handleInvestment(team.teamName);
+    handleInvestment(companyName, team.teamName);
   });
 
   return card;
 }
 
-// 투자 처리
-function handleInvestment(teamName) {
+function handleInvestment(companyName, teamName) {
   const input = document.querySelector(`.investment-input[data-team="${cssEscape(teamName)}"]`);
   const errorDiv = document.querySelector(`.input-error[data-team="${cssEscape(teamName)}"]`);
   const value = (input?.value || "").trim();
 
-  if (!value) {
-    errorDiv.textContent = "투자 포인트를 입력해주세요";
-    return;
-  }
-  if (!/^\d+$/.test(value)) {
-    errorDiv.textContent = "숫자만 입력해주세요";
-    return;
-  }
+  if (!value) { errorDiv.textContent = "투자 포인트를 입력해주세요"; return; }
+  if (!/^\d+$/.test(value)) { errorDiv.textContent = "숫자만 입력해주세요"; return; }
 
   const amount = parseInt(value, 10);
-  if (amount <= 0) {
-    errorDiv.textContent = "0보다 큰 금액을 입력해주세요";
-    return;
-  }
+  if (amount <= 0) { errorDiv.textContent = "0보다 큰 금액을 입력해주세요"; return; }
 
-  const companyName = document.getElementById("companySelect").value;
+  recomputeAggregatesFromInvestments();
+
   const companies = getData("companies");
   const company = companies.find((c) => c.name === companyName);
+  if (!company) return showToast("기업 정보를 찾을 수 없습니다", true);
 
-  if (!company) {
-    showToast("기업 정보를 찾을 수 없습니다", true);
-    return;
-  }
+  const remain = Number(company.basePoints || 0) - Number(company.spentPoints || 0);
+  if (amount > remain) return showToast("포인트가 부족합니다", true);
 
-  const remainPoints = (company.basePoints || 0) - (company.spentPoints || 0);
-  if (amount > remainPoints) {
-    showToast("포인트가 부족합니다", true);
-    return;
-  }
+  const team = getData("teams").find((t) => t.teamName === teamName);
+  if (!team) return showToast("팀 정보를 찾을 수 없습니다", true);
 
-  const teams = getData("teams");
-  const team = teams.find((t) => t.teamName === teamName);
-  if (!team) {
-    showToast("팀 정보를 찾을 수 없습니다", true);
-    return;
-  }
-
-  // ✅ 같은 기업이 같은 팀에 "처음 투자"인지 확인해서 backerCount 증가
   const investments = getData("investments");
-  const firstTime = !investments.some(
-    (inv) => inv.companyName === companyName && inv.teamName === teamName
-  );
-
-  // 데이터 업데이트
-  company.spentPoints = (company.spentPoints || 0) + amount;
-  team.raisedPoints = (team.raisedPoints || 0) + amount;
-  if (firstTime) team.backerCount = (team.backerCount || 0) + 1;
-
-  // 투자내역 추가
   investments.push({
     ts: Date.now(),
-    companyName: company.name,
-    teamName: team.teamName,
+    companyName,
+    teamName,
     itemName: team.itemName,
-    amount: amount,
+    amount,
   });
-
-  // 저장
-  saveData("companies", companies);
-  saveData("teams", teams);
   saveData("investments", investments);
 
-  // UI 업데이트
+  // ✅ 투자내역 기준 재집계(중복 투자자 제거)
+  recomputeAggregatesFromInvestments();
+
   input.value = "";
   errorDiv.textContent = "";
   loadCompanyInfo(companyName);
+  loadTeams(companyName);
+  renderMyInvestSummary(companyName);
 
   showToast("투자가 완료되었습니다");
 }
 
-// XSS 방지(간단)
+function renderMyInvestSummary(companyName) {
+  const wrap = document.getElementById("myInvestSummary");
+  const list = document.getElementById("myInvestList");
+
+  const investments = getData("investments").filter((inv) => inv.companyName === companyName);
+  if (investments.length === 0) { wrap.style.display = "none"; return; }
+
+  const sumByTeam = new Map();
+  for (const inv of investments) {
+    sumByTeam.set(inv.teamName, (sumByTeam.get(inv.teamName) || 0) + Number(inv.amount || 0));
+  }
+
+  wrap.style.display = "block";
+  list.innerHTML = "";
+  [...sumByTeam.entries()].forEach(([teamName, total]) => {
+    const row = document.createElement("div");
+    row.className = "my-invest-row";
+    row.innerHTML = `<div class="mi-team">${escapeHtml(teamName)}</div><div class="mi-amt">${Number(total).toLocaleString()} P</div>`;
+    list.appendChild(row);
+  });
+}
+
+/** Utils */
 function escapeHtml(str) {
   return String(str ?? "")
     .replaceAll("&", "&amp;")
@@ -569,11 +590,5 @@ function escapeHtml(str) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
-function escapeAttr(str){ return escapeHtml(str); }
-function cssEscape(str){
-  // querySelector에서 data-team 값 매칭용(큰따옴표/백슬래시 등 최소 방어)
-  return String(str).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-}
-
-// 초기화
-initStorage();
+function escapeAttr(str) { return escapeHtml(str); }
+function cssEscape(str) { return String(str).replace(/\\/g, "\\\\").replace(/"/g, '\\"'); }

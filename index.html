@@ -11,9 +11,26 @@
   <div id="entryModal" class="modal">
     <div class="modal-content">
       <h2>접속 유형 선택</h2>
-      <div class="button-group">
-        <button id="adminBtn" class="modal-btn">관리자</button>
-        <button id="companyBtn" class="modal-btn">기업</button>
+
+      <div id="entryStepType">
+        <div class="button-group">
+          <button id="adminBtn" class="modal-btn">관리자</button>
+          <button id="companyBtn" class="modal-btn">기업</button>
+        </div>
+      </div>
+
+      <!-- 기업 선택(팝업에서 고정 선택) -->
+      <div id="entryStepCompany" style="display:none; margin-top:14px;">
+        <div class="field">
+          <label class="field-label">기업 선택</label>
+          <select id="entryCompanySelect" class="field-input">
+            <option value="">기업을 선택하세요</option>
+          </select>
+        </div>
+        <div class="button-group" style="margin-top:12px;">
+          <button id="entryCompanyEnter" class="modal-btn">입장</button>
+          <button id="entryCompanyBack" class="modal-btn secondary">뒤로</button>
+        </div>
       </div>
     </div>
   </div>
@@ -125,7 +142,14 @@
     <div class="container">
       <h1>모의 투자 플랫폼</h1>
 
-      <div class="company-selector">
+      <!-- 기업 고정 표시 -->
+      <div class="company-fixed">
+        <div class="company-fixed-label">기업명 : <b id="fixedCompanyName"></b></div>
+        <button id="companyResetBtn" class="ghost-btn" title="다른 기업으로 들어가려면 새로 선택">기업 다시 선택</button>
+      </div>
+
+      <!-- (숨길 예정) 기업 선택 -->
+      <div id="companySelectorWrap" class="company-selector" style="display:none;">
         <label for="companySelect">기업 선택:</label>
         <select id="companySelect">
           <option value="">기업을 선택하세요</option>
@@ -147,6 +171,12 @@
             <span id="remainPoints" class="value">0</span>
           </div>
         </div>
+      </div>
+
+      <!-- 내 투자 요약(추가) -->
+      <div id="myInvestSummary" class="my-invest" style="display:none;">
+        <div class="my-invest-title">내 투자 현황</div>
+        <div id="myInvestList" class="my-invest-list"></div>
       </div>
 
       <div id="teamsContainer" class="teams-container"></div>

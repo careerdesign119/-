@@ -1,265 +1,148 @@
-/* 기본 */
-*{ box-sizing:border-box; }
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, "Noto Sans KR", Arial, sans-serif;
-  background:#f6f7fb;
-  color:#111827;
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, sans-serif;
+  background: #ffffff;
+  color: #111827;
 }
-.container{
-  max-width:1100px;
-  margin:0 auto;
-  padding:20px;
-}
-h1{ margin:0 0 14px; }
-h2{ margin:0; }
 
-/* 모달 */
-.modal{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:rgba(17,24,39,.35);
-  z-index:9999;
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 18px;
 }
-.modal-content{
-  width:min(520px, 92vw);
-  background:#fff;
-  border:1px solid #e5e7eb;
-  border-radius:16px;
-  padding:18px;
-  box-shadow:0 10px 30px rgba(0,0,0,.12);
-}
-.button-group{
-  display:flex;
-  gap:10px;
-  margin-top:14px;
-}
-.modal-btn{
-  flex:1;
-  padding:10px 12px;
-  border-radius:12px;
-  border:1px solid #e5e7eb;
-  background:#fff;
-  cursor:pointer;
-}
-.modal-btn:hover{ background:#f9fafb; }
-.modal-btn.secondary{ background:#f3f4f6; }
 
-/* 토스트 */
-.toast{
-  position:fixed;
-  top:14px;
-  left:50%;
-  transform:translateX(-50%);
-  padding:10px 14px;
-  border-radius:999px;
-  background:#111827;
-  color:#fff;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .12s ease;
-  z-index:10000;
-  font-size:13px;
-}
-.toast.show{ opacity:1; }
-.toast.error{ background:#b91c1c; }
+h1 { margin: 0 0 14px; font-size: 22px; }
+h2 { margin: 0; font-size: 16px; }
 
-/* 탭 */
-.tabs{
-  display:flex;
-  gap:8px;
-  margin:10px 0 14px;
-}
-.tab-btn{
-  padding:10px 12px;
-  border-radius:12px;
-  border:1px solid #e5e7eb;
-  background:#fff;
-  cursor:pointer;
-}
-.tab-btn.active{
-  border-color:#93c5fd;
-  background:#eff6ff;
-}
-.tab-content{ display:none; }
-.tab-content.active{ display:block; }
+.muted { color: #6b7280; font-size: 12px; }
+.hint { margin-top: 10px; color:#6b7280; font-size: 12px; }
 
-/* 테이블 */
-.section-header{
+.topbar {
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin:12px 0;
+  gap: 12px;
+  margin-bottom: 12px;
 }
-.add-btn, .delete-all-btn, .save-btn{
-  padding:10px 12px;
-  border-radius:12px;
-  border:1px solid #e5e7eb;
-  background:#fff;
-  cursor:pointer;
-}
-.save-btn{
-  width:100%;
-  margin-top:14px;
-  border-color:#93c5fd;
-  background:#eff6ff;
-}
-.table-wrapper{
-  overflow:auto;
-  border:1px solid #e5e7eb;
-  border-radius:14px;
-  background:#fff;
-}
-.data-table{
-  width:100%;
-  border-collapse:collapse;
-  min-width:900px;
-}
-.data-table th, .data-table td{
-  border-bottom:1px solid #e5e7eb;
-  padding:10px;
-  vertical-align:top;
-  background:#fff;
-}
-.data-table th{
-  background:#f9fafb;
-  font-size:13px;
-  color:#374151;
-  position:sticky;
-  top:0;
-}
-.data-table input, .data-table textarea, select{
-  width:100%;
-  padding:8px 10px;
-  border-radius:12px;
-  border:1px solid #e5e7eb;
-}
-.data-table textarea{ min-height:60px; resize:vertical; }
-.readonly{
-  background:#f3f4f6 !important;
-}
-
-/* 기업 페이지 */
-.company-selector{
+.topbar-right{
   display:flex;
-  gap:10px;
   align-items:center;
-  margin:12px 0;
+  gap:10px;
 }
-.company-info .info-card{
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-  background:#fff;
-  border:1px solid #e5e7eb;
-  border-radius:16px;
-  padding:12px;
-}
-.info-item{
-  background:#f9fafb;
-  border:1px solid #e5e7eb;
-  border-radius:14px;
-  padding:10px 12px;
-}
-.label{ color:#6b7280; font-size:12px; }
-.value{ font-weight:700; }
 
-/* 팀 카드 */
-.teams-container{
-  display:grid;
-  grid-template-columns:repeat(3, 1fr);
-  gap:14px;
-  margin-top:14px;
+.tabs { display: flex; gap: 8px; margin: 14px 0; }
+.tab-btn {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
 }
-@media (max-width:980px){ .teams-container{ grid-template-columns:repeat(2, 1fr);} }
-@media (max-width:620px){ .teams-container{ grid-template-columns:1fr;} }
+.tab-btn.active { background: #111827; color: #fff; border-color: #111827; }
 
-.team-card{
-  background:#fff;
-  border:1px solid #e5e7eb;
-  border-radius:16px;
-  padding:14px;
-  box-shadow:0 10px 30px rgba(17,24,39,.06);
-}
-.team-header{
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.section-header {
   display:flex;
+  align-items:center;
   justify-content:space-between;
-  align-items:center;
-  gap:10px;
-}
-.team-name{ font-weight:800; }
-.team-category{
-  font-size:12px;
-  padding:6px 10px;
-  border-radius:999px;
-  background:#eff6ff;
-  border:1px solid #bfdbfe;
-}
-.team-item{ margin-top:10px; font-weight:700; }
-.team-oneline{ margin-top:8px; color:#6b7280; }
-.team-detail{ margin-top:8px; color:#374151; font-size:13px; line-height:1.45; }
-
-.progress-section{ margin-top:12px; }
-.progress-info{ display:flex; justify-content:space-between; color:#6b7280; font-size:12px; }
-.progress-bar-container{
-  margin-top:8px;
-  height:10px;
-  border-radius:999px;
-  background:#f3f4f6;
-  border:1px solid #e5e7eb;
-  overflow:hidden;
-}
-.progress-bar{
-  height:100%;
-  background:linear-gradient(90deg,#2563eb,#10b981);
-}
-.investor-count{
-  margin-top:8px;
-  font-size:13px;
-  color:#6b7280;
+  margin: 10px 0;
 }
 
-.investment-section{
-  margin-top:14px;
-  border-top:1px solid #e5e7eb;
-  padding-top:12px;
+.add-btn, .delete-all-btn, .save-btn, .modal-btn, .ghost-btn {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
 }
-.investment-notice{
-  font-size:12px;
-  color:#6b7280;
-  margin-bottom:8px;
+
+.add-btn { background:#f9fafb; }
+.delete-all-btn { background:#fff5f5; border-color:#fecaca; color:#991b1b; }
+.save-btn { margin-top: 14px; width: 100%; background:#111827; color:#fff; border-color:#111827; }
+
+.ghost-btn { background:#f9fafb; }
+.ghost-btn:hover { background:#f3f4f6; }
+
+.table-wrapper {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  overflow: auto;
+  background: #fff;
 }
-.investment-input-group{
-  display:flex;
-  gap:8px;
+
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 10px;
+  font-size: 12px;
+  vertical-align: top;
 }
-.investment-input{
-  flex:1;
+.data-table th { background:#f9fafb; text-align:left; }
+
+.data-table input, .data-table textarea, select.field-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  outline: none;
+  font-size: 12px;
+  background: #fff;
 }
-.invest-btn{
-  padding:10px 12px;
-  border-radius:12px;
-  border:1px solid #e5e7eb;
-  background:#fff;
-  cursor:pointer;
+.data-table textarea { min-height: 64px; resize: vertical; }
+
+.readonly {
+  background: #f9fafb !important;
+  color: #6b7280;
 }
-.invest-btn:hover{ background:#f9fafb; }
-.input-error{
-  margin-top:6px;
-  color:#ef4444;
-  font-size:12px;
-  min-height:16px;
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17,24,39,0.35);
+  z-index: 1000;
 }
-.investment-input.error{
-  border-color:#ef4444;
+.modal-content {
+  width: min(520px, 92vw);
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  padding: 16px;
 }
+
+.button-group { display:flex; gap:10px; margin-top: 12px; }
+.modal-btn { flex: 1; }
+.modal-btn.secondary { background:#f9fafb; }
 
 .field { display:flex; flex-direction:column; gap:6px; }
 .field-label{ font-size:12px; color:#6b7280; }
 .field-input{ padding:10px 12px; border-radius:12px; border:1px solid #e5e7eb; }
+
+.error-text { color:#dc2626; font-size: 12px; margin: 6px 0 0; min-height: 16px; }
+
+.toast {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.15);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s ease;
+  z-index: 2000;
+}
+.toast.show { opacity: 1; }
+.toast.error { background: #b91c1c; }
 
 .company-fixed{
   display:flex;
@@ -273,14 +156,52 @@ h2{ margin:0; }
   margin:12px 0;
 }
 .company-fixed-label{ font-size:14px; color:#111827; }
-.ghost-btn{
-  padding:10px 12px;
-  border-radius:12px;
+
+.company-info .info-card{
+  display:flex;
+  gap:10px;
+  padding: 12px 14px;
   border:1px solid #e5e7eb;
-  background:#f9fafb;
-  cursor:pointer;
+  border-radius:16px;
+  background:#fff;
 }
-.ghost-btn:hover{ background:#f3f4f6; }
+.info-item{ flex: 1; display:flex; justify-content:space-between; gap:10px; }
+.label{ color:#6b7280; font-size:12px; }
+.value{ font-weight:900; }
+
+.teams-container { display:flex; flex-direction:column; gap:12px; margin-top: 14px; }
+.team-card {
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  padding: 14px;
+  background:#fff;
+}
+.team-header{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.team-name{ font-weight: 900; }
+.team-category{ font-size:12px; color:#6b7280; border:1px solid #e5e7eb; padding: 4px 8px; border-radius:999px; background:#f9fafb; }
+.team-item{ margin-top: 6px; font-weight: 800; }
+.team-oneline{ margin-top: 4px; color:#374151; }
+.team-detail{ margin-top: 8px; color:#374151; white-space: pre-wrap; }
+
+.progress-section{ margin-top: 12px; }
+.progress-info{ display:flex; justify-content:space-between; color:#6b7280; font-size:12px; }
+.progress-bar-container{
+  margin-top: 8px;
+  height: 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  overflow:hidden;
+}
+.progress-bar{ height:100%; background:#111827; }
+.investor-count{ margin-top: 8px; font-size:12px; color:#6b7280; }
+
+.investment-section{ margin-top: 12px; }
+.investment-notice{ font-size:12px; color:#6b7280; margin-bottom: 8px; }
+.investment-input-group{ display:flex; gap:10px; }
+.investment-input{ flex: 1; padding: 10px 12px; border-radius: 12px; border:1px solid #e5e7eb; }
+.invest-btn{ padding: 10px 12px; border-radius: 12px; border:1px solid #111827; background:#111827; color:#fff; font-weight: 900; cursor:pointer; }
+.input-error{ color:#dc2626; font-size: 12px; margin-top: 6px; min-height: 16px; }
+.investment-input.error{ border-color:#dc2626; }
 
 .my-invest{
   margin-top:12px;
@@ -289,7 +210,7 @@ h2{ margin:0; }
   border-radius:16px;
   padding:12px 14px;
 }
-.my-invest-title{ font-weight:800; margin-bottom:10px; }
+.my-invest-title{ font-weight:900; margin-bottom:10px; }
 .my-invest-list{ display:flex; flex-direction:column; gap:8px; }
 .my-invest-row{
   display:flex;
@@ -300,5 +221,5 @@ h2{ margin:0; }
   border-radius:12px;
   padding:10px 12px;
 }
-.mi-team{ color:#111827; font-weight:600; }
-.mi-amt{ color:#111827; font-weight:800; }
+.mi-team{ font-weight:700; }
+.mi-amt{ font-weight:900; }

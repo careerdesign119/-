@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- 접속 유형 선택 모달 -->
+  <!-- Entry Modal -->
   <div id="entryModal" class="modal">
     <div class="modal-content">
       <h2>접속 유형 선택</h2>
@@ -19,12 +19,11 @@
         </div>
       </div>
 
-      <!-- 기업 선택(팝업에서 고정 선택) -->
       <div id="entryStepCompany" style="display:none; margin-top:14px;">
         <div class="field">
           <label class="field-label">기업 선택</label>
           <select id="entryCompanySelect" class="field-input">
-            <option value="">기업을 선택하세요</option>
+            <option value="">불러오는 중...</option>
           </select>
         </div>
         <div class="button-group" style="margin-top:12px;">
@@ -35,7 +34,7 @@
     </div>
   </div>
 
-  <!-- 관리자 비밀번호 모달 -->
+  <!-- Admin Password Modal -->
   <div id="passwordModal" class="modal" style="display:none;">
     <div class="modal-content">
       <h2>관리자 비밀번호 입력</h2>
@@ -48,13 +47,19 @@
     </div>
   </div>
 
-  <!-- 토스트 -->
+  <!-- Toast -->
   <div id="toast" class="toast"></div>
 
-  <!-- 관리자 페이지 -->
+  <!-- Admin Page -->
   <div id="adminPage" class="page" style="display:none;">
     <div class="container">
-      <h1>관리자 페이지</h1>
+      <div class="topbar">
+        <h1>관리자 페이지</h1>
+        <div class="topbar-right">
+          <span id="lastSyncText" class="muted">마지막 동기화: -</span>
+          <button id="syncBtn" class="ghost-btn">시트에서 다시 불러오기</button>
+        </div>
+      </div>
 
       <div class="tabs">
         <button class="tab-btn active" data-tab="companies">기업 목록</button>
@@ -62,10 +67,10 @@
         <button class="tab-btn" data-tab="investments">투자내역</button>
       </div>
 
-      <!-- 기업 목록 탭 -->
+      <!-- Companies -->
       <div id="companiesTab" class="tab-content active">
         <div class="section-header">
-          <h2>기업 목록 관리</h2>
+          <h2>기업 목록</h2>
           <button id="addCompanyBtn" class="add-btn">+ 행 추가</button>
         </div>
         <div class="table-wrapper">
@@ -82,12 +87,13 @@
             <tbody></tbody>
           </table>
         </div>
+        <div class="hint">※ 사용포인트/남은포인트는 <b>투자내역</b> 기준으로 자동 계산되어 수정할 수 없습니다.</div>
       </div>
 
-      <!-- 팀 목록 탭 -->
+      <!-- Teams -->
       <div id="teamsTab" class="tab-content">
         <div class="section-header">
-          <h2>팀 목록 관리</h2>
+          <h2>팀 목록</h2>
           <button id="addTeamBtn" class="add-btn">+ 행 추가</button>
         </div>
         <div class="table-wrapper">
@@ -108,9 +114,10 @@
             <tbody></tbody>
           </table>
         </div>
+        <div class="hint">※ 모인포인트/투자자수는 <b>투자내역</b> 기준으로 자동 계산되어 수정할 수 없습니다.</div>
       </div>
 
-      <!-- 투자내역 탭 -->
+      <!-- Investments -->
       <div id="investmentsTab" class="tab-content">
         <div class="section-header">
           <h2>투자내역</h2>
@@ -123,7 +130,6 @@
                 <th>일시</th>
                 <th>기업명</th>
                 <th>팀명</th>
-                <th>아이템명</th>
                 <th>투자금액</th>
                 <th>삭제</th>
               </tr>
@@ -137,43 +143,24 @@
     </div>
   </div>
 
-  <!-- 기업 페이지 -->
+  <!-- Company Page -->
   <div id="companyPage" class="page" style="display:none;">
     <div class="container">
       <h1>모의 투자 플랫폼</h1>
 
-      <!-- 기업 고정 표시 -->
       <div class="company-fixed">
         <div class="company-fixed-label">기업명 : <b id="fixedCompanyName"></b></div>
-        <button id="companyResetBtn" class="ghost-btn" title="다른 기업으로 들어가려면 새로 선택">기업 다시 선택</button>
-      </div>
-
-      <!-- (숨길 예정) 기업 선택 -->
-      <div id="companySelectorWrap" class="company-selector" style="display:none;">
-        <label for="companySelect">기업 선택:</label>
-        <select id="companySelect">
-          <option value="">기업을 선택하세요</option>
-        </select>
+        <button id="companyResetBtn" class="ghost-btn">기업 다시 선택</button>
       </div>
 
       <div id="companyInfo" class="company-info" style="display:none;">
         <div class="info-card">
-          <div class="info-item">
-            <span class="label">기본포인트:</span>
-            <span id="basePoints" class="value">0</span>
-          </div>
-          <div class="info-item">
-            <span class="label">사용포인트:</span>
-            <span id="spentPoints" class="value">0</span>
-          </div>
-          <div class="info-item">
-            <span class="label">남은포인트:</span>
-            <span id="remainPoints" class="value">0</span>
-          </div>
+          <div class="info-item"><span class="label">기본포인트:</span><span id="basePoints" class="value">0</span></div>
+          <div class="info-item"><span class="label">사용포인트:</span><span id="spentPoints" class="value">0</span></div>
+          <div class="info-item"><span class="label">남은포인트:</span><span id="remainPoints" class="value">0</span></div>
         </div>
       </div>
 
-      <!-- 내 투자 요약(추가) -->
       <div id="myInvestSummary" class="my-invest" style="display:none;">
         <div class="my-invest-title">내 투자 현황</div>
         <div id="myInvestList" class="my-invest-list"></div>

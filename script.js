@@ -1,21 +1,48 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbxPn-rQGn_-1pLMycdf4BwSG9BsHhKVFoIzTSz7CRilKnj-RMRrTl3PUsOcTwIhon0/exec";
-const ADMIN_PASSWORD = "123456789";
 
 // ===== 전역 상태 =====
 let state = { companies: [], teams: [], investments: [] };
 let selectedCompanyName = "";
+let adminToken = "";
+let loadingCount = 0;
 
 // ===== UI helpers =====
 function showToast(message, isError = false) {
   const toast = document.getElementById("toast");
   toast.textContent = message;
   toast.className = "toast show" + (isError ? " error" : "");
-  setTimeout(() => (toast.className = "toast"), 1000);
+  setTimeout(() => (toast.className = "toast"), 1200);
 }
+
+function showLoading(message = "로딩중...") {
+  loadingCount += 1;
+  const overlay = document.getElementById("loadingOverlay");
+  const text = overlay.querySelector(".loading-text");
+  text.textContent = message;
+  overlay.style.display = "flex";
+}
+
+function hideLoading() {
+  loadingCount = Math.max(0, loadingCount - 1);
+  if (loadingCount === 0) {
+    document.getElementById("loadingOverlay").style.display = "none";
+  }
+}
+
+async function withLoading(fn, message = "로딩중...") {
+  showLoading(message);
+  try {
+    return await fn();
+  } finally {
+    hideLoading();
+  }
+}
+
 function n(v) {
   const x = Number(v);
   return Number.isFinite(x) ? x : 0;
 }
+
 function escapeHtml(str) {
   return String(str ?? "")
     .replaceAll("&", "&amp;")
@@ -24,16 +51,25 @@ function escapeHtml(str) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
-function cssEscape(str) { return String(str).replace(/\\/g, "\\\\").replace(/"/g, '\\"'); }
+
+function cssEscape(str) {
+  return String(str).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 function toISO(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return String(value ?? "");
   return d.toISOString();
 }
+
 function formatDateKOR(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return String(value ?? "");
   return d.toLocaleString("ko-KR");
+}
+
+function getTeamImageUrl(team) {
+  return String(team["이미지URL"] ?? "").trim();
 }
 
 // ===== API =====
@@ -42,21 +78,22 @@ async function apiGetInit() {
   if (!res.ok) throw new Error(`init failed: ${res.status}`);
   return await res.json();
 }
+
 async function apiPost(action, payload) {
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" }, // Apps Script 호환
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({ action, ...payload }),
   });
   if (!res.ok) throw new Error(`post failed: ${res.status}`);
   return await res.json();
 }
 
-// ===== 집계 (투자내역이 진실) =====
+// ===== 집계 =====
 function computeAggregates() {
-  const spentByCompany = new Map(); // 기업명 -> 사용합
-  const raisedByTeam = new Map();   // 팀명 -> 모인합
-  const uniqueBackersByTeam = new Map(); // 팀명 -> Set(기업명)
+  const spentByCompany = new Map();
+  const raisedByTeam = new Map();
+  const uniqueBackersByTeam = new Map();
 
   for (const inv of state.investments) {
     const c = String(inv["기업명"] ?? "").trim();
@@ -86,6 +123,7 @@ const entryCompanySelect = document.getElementById("entryCompanySelect");
 
 function resetToEntry() {
   selectedCompanyName = "";
+  adminToken = "";
   companyPage.style.display = "none";
   adminPage.style.display = "none";
   passwordModal.style.display = "none";
@@ -93,47 +131,77 @@ function resetToEntry() {
   entryStepCompany.style.display = "none";
   entryStepType.style.display = "block";
   entryCompanySelect.innerHTML = `<option value="">불러오는 중...</option>`;
+
+  document.getElementById("passwordInput").value = "";
+  document.getElementById("passwordError").textContent = "";
 }
 
 document.getElementById("adminBtn").addEventListener("click", () => {
   entryModal.style.display = "none";
   passwordModal.style.display = "flex";
 });
+
 document.getElementById("companyBtn").addEventListener("click", async () => {
   entryStepType.style.display = "none";
   entryStepCompany.style.display = "block";
-  await fillEntryCompanyDropdown();
+  await withLoading(async () => {
+    await fillEntryCompanyDropdown();
+  }, "기업 목록 불러오는 중...");
 });
+
 document.getElementById("entryCompanyBack").addEventListener("click", () => {
   entryStepCompany.style.display = "none";
   entryStepType.style.display = "block";
   entryCompanySelect.value = "";
 });
-document.getElementById("entryCompanyEnter").addEventListener("click", () => {
+
+document.getElementById("entryCompanyEnter").addEventListener("click", async () => {
   const name = entryCompanySelect.value;
   if (!name) return showToast("기업을 선택해주세요", true);
 
   selectedCompanyName = name;
   entryModal.style.display = "none";
   companyPage.style.display = "block";
-  initCompanyPageLocked(selectedCompanyName);
+
+  await withLoading(async () => {
+    await initCompanyPageLocked(selectedCompanyName);
+  }, "화면 준비중...");
 });
 
 document.getElementById("passwordCancel").addEventListener("click", () => {
   resetToEntry();
-  document.getElementById("passwordInput").value = "";
-  document.getElementById("passwordError").textContent = "";
 });
+
 document.getElementById("passwordSubmit").addEventListener("click", async () => {
-  const input = document.getElementById("passwordInput").value;
-  if (input !== ADMIN_PASSWORD) {
-    document.getElementById("passwordError").textContent = "비밀번호가 일치하지 않습니다";
+  const input = document.getElementById("passwordInput").value.trim();
+  const errorEl = document.getElementById("passwordError");
+
+  if (!input) {
+    errorEl.textContent = "비밀번호를 입력해주세요";
     return;
   }
-  passwordModal.style.display = "none";
-  adminPage.style.display = "block";
-  await initAdminPage();
+
+  await withLoading(async () => {
+    try {
+      const resp = await apiPost("adminLogin", { password: input });
+
+      if (!resp.success) {
+        errorEl.textContent = "비밀번호가 일치하지 않습니다";
+        return;
+      }
+
+      adminToken = resp.token || "";
+      errorEl.textContent = "";
+      passwordModal.style.display = "none";
+      adminPage.style.display = "block";
+      await initAdminPage();
+    } catch (e) {
+      console.error(e);
+      errorEl.textContent = "로그인에 실패했습니다";
+    }
+  }, "관리자 로그인중...");
 });
+
 document.getElementById("passwordInput").addEventListener("keypress", (e) => {
   if (e.key === "Enter") document.getElementById("passwordSubmit").click();
 });
@@ -186,13 +254,15 @@ async function initAdminPage() {
 }
 
 document.getElementById("syncBtn").addEventListener("click", async () => {
-  try {
-    await initAdminPage();
-    showToast("불러오기 완료");
-  } catch (e) {
-    console.error(e);
-    showToast("불러오기에 실패했습니다", true);
-  }
+  await withLoading(async () => {
+    try {
+      await initAdminPage();
+      showToast("불러오기 완료");
+    } catch (e) {
+      console.error(e);
+      showToast("불러오기에 실패했습니다", true);
+    }
+  }, "시트 데이터 불러오는 중...");
 });
 
 function renderAdminAll() {
@@ -260,6 +330,7 @@ function renderTeamsTable() {
       <td><input type="text" value="${escapeHtml(t["카테고리"] ?? "")}" data-type="team" data-field="카테고리" data-index="${index}"></td>
       <td><input type="text" value="${escapeHtml(t["한줄소개"] ?? "")}" data-type="team" data-field="한줄소개" data-index="${index}"></td>
       <td><textarea data-type="team" data-field="상세설명" data-index="${index}">${escapeHtml(t["상세설명"] ?? "")}</textarea></td>
+      <td><input type="text" value="${escapeHtml(t["이미지파일명"] ?? "")}" data-type="team" data-field="이미지파일명" data-index="${index}" placeholder="예: team1.jpg"></td>
       <td><input type="number" value="${goal}" data-type="team" data-field="목표포인트" data-index="${index}"></td>
       <td><input type="number" value="${raised}" class="readonly" readonly></td>
       <td><input type="number" value="${backers}" class="readonly" readonly></td>
@@ -308,16 +379,34 @@ function renderInvestmentsTable() {
 
     row.querySelector(".delete-row-btn").addEventListener("click", async () => {
       if (!confirm("이 투자내역을 삭제할까요?")) return;
-      try {
-        const resp = await apiPost("deleteInvestment", { ts: tsIso, companyName, teamName, amount });
-        if (!resp.success) throw new Error(resp.error || "delete failed");
-        await loadFromSheet();
-        renderAdminAll();
-        showToast("삭제되었습니다");
-      } catch (e) {
-        console.error(e);
-        showToast("삭제에 실패했습니다", true);
-      }
+
+      await withLoading(async () => {
+        try {
+          const resp = await apiPost("deleteInvestment", {
+            token: adminToken,
+            ts: tsIso,
+            companyName,
+            teamName,
+            amount
+          });
+
+          if (!resp.success) {
+            if (resp.error === "unauthorized") {
+              showToast("관리자 인증이 만료되었습니다. 다시 로그인해주세요", true);
+              resetToEntry();
+              return;
+            }
+            throw new Error(resp.error || "delete failed");
+          }
+
+          await loadFromSheet();
+          renderAdminAll();
+          showToast("삭제되었습니다");
+        } catch (e) {
+          console.error(e);
+          showToast("삭제에 실패했습니다", true);
+        }
+      }, "삭제 처리중...");
     });
   });
 }
@@ -326,6 +415,7 @@ document.getElementById("addCompanyBtn").addEventListener("click", () => {
   state.companies.push({ "기업명": "", "기본포인트": 0 });
   renderCompaniesTable();
 });
+
 document.getElementById("addTeamBtn").addEventListener("click", () => {
   state.teams.push({
     "팀명": "",
@@ -333,65 +423,108 @@ document.getElementById("addTeamBtn").addEventListener("click", () => {
     "카테고리": "",
     "한줄소개": "",
     "상세설명": "",
+    "이미지파일명": "",
     "목표포인트": 0
   });
   renderTeamsTable();
 });
 
 document.getElementById("saveAdminBtn").addEventListener("click", async () => {
-  try {
-    // 간단 검증
-    const companyNames = new Set();
-    for (const c of state.companies) {
-      const name = String(c["기업명"] ?? "").trim();
-      if (!name) return showToast("기업명을 입력해주세요", true);
-      if (companyNames.has(name)) return showToast(`기업명 중복: ${name}`, true);
-      companyNames.add(name);
+  const saveBtn = document.getElementById("saveAdminBtn");
+
+  await withLoading(async () => {
+    try {
+      const companyNames = new Set();
+      for (const c of state.companies) {
+        const name = String(c["기업명"] ?? "").trim();
+        if (!name) return showToast("기업명을 입력해주세요", true);
+        if (companyNames.has(name)) return showToast(`기업명 중복: ${name}`, true);
+        companyNames.add(name);
+      }
+
+      const teamNames = new Set();
+      for (const t of state.teams) {
+        const name = String(t["팀명"] ?? "").trim();
+        if (!name) return showToast("팀명을 입력해주세요", true);
+        if (teamNames.has(name)) return showToast(`팀명 중복: ${name}`, true);
+        teamNames.add(name);
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = "저장중...";
+
+      const r1 = await apiPost("saveCompanies", {
+        token: adminToken,
+        companies: state.companies
+      });
+      if (!r1.success) {
+        if (r1.error === "unauthorized") {
+          showToast("관리자 인증이 만료되었습니다. 다시 로그인해주세요", true);
+          resetToEntry();
+          return;
+        }
+        throw new Error(r1.error || "saveCompanies failed");
+      }
+
+      const r2 = await apiPost("saveTeams", {
+        token: adminToken,
+        teams: state.teams
+      });
+      if (!r2.success) {
+        if (r2.error === "unauthorized") {
+          showToast("관리자 인증이 만료되었습니다. 다시 로그인해주세요", true);
+          resetToEntry();
+          return;
+        }
+        throw new Error(r2.error || "saveTeams failed");
+      }
+
+      await loadFromSheet();
+      renderAdminAll();
+      showToast("적용되었습니다");
+    } catch (e) {
+      console.error(e);
+      showToast("저장에 실패했습니다", true);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "저장";
     }
-    const teamNames = new Set();
-    for (const t of state.teams) {
-      const name = String(t["팀명"] ?? "").trim();
-      if (!name) return showToast("팀명을 입력해주세요", true);
-      if (teamNames.has(name)) return showToast(`팀명 중복: ${name}`, true);
-      teamNames.add(name);
-    }
-
-    const r1 = await apiPost("saveCompanies", { companies: state.companies });
-    if (!r1.success) throw new Error("saveCompanies failed");
-
-    const r2 = await apiPost("saveTeams", { teams: state.teams });
-    if (!r2.success) throw new Error("saveTeams failed");
-
-    await loadFromSheet();
-    renderAdminAll();
-    showToast("적용되었습니다");
-  } catch (e) {
-    console.error(e);
-    showToast("저장에 실패했습니다", true);
-  }
+  }, "저장중...");
 });
 
 document.getElementById("clearInvestmentsBtn").addEventListener("click", async () => {
   if (!confirm("모든 투자내역을 삭제하시겠습니까?")) return;
-  try {
-    const r = await apiPost("clearInvestments", {});
-    if (!r.success) throw new Error("clear failed");
-    await loadFromSheet();
-    renderAdminAll();
-    showToast("투자내역이 모두 삭제되었습니다");
-  } catch (e) {
-    console.error(e);
-    showToast("전체 삭제에 실패했습니다", true);
-  }
+
+  await withLoading(async () => {
+    try {
+      const r = await apiPost("clearInvestments", {
+        token: adminToken
+      });
+
+      if (!r.success) {
+        if (r.error === "unauthorized") {
+          showToast("관리자 인증이 만료되었습니다. 다시 로그인해주세요", true);
+          resetToEntry();
+          return;
+        }
+        throw new Error(r.error || "clear failed");
+      }
+
+      await loadFromSheet();
+      renderAdminAll();
+      showToast("투자내역이 모두 삭제되었습니다");
+    } catch (e) {
+      console.error(e);
+      showToast("전체 삭제에 실패했습니다", true);
+    }
+  }, "전체 삭제중...");
 });
 
 // ===== Company Page =====
-function initCompanyPageLocked(companyName) {
+async function initCompanyPageLocked(companyName) {
   document.getElementById("fixedCompanyName").textContent = companyName;
-
   document.getElementById("companyResetBtn").onclick = () => resetToEntry();
-
-  renderCompanyPage(companyName);
+  await renderCompanyPage(companyName);
 }
 
 async function renderCompanyPage(companyName) {
@@ -436,13 +569,20 @@ function renderTeams(companyName) {
     const goal = n(team["목표포인트"]);
     const raised = raisedByTeam.get(teamName) || 0;
     const backers = uniqueBackersByTeam.has(teamName) ? uniqueBackersByTeam.get(teamName).size : 0;
+    const imageUrl = getTeamImageUrl(team);
 
-    const percentage = goal > 0 ? Math.round((raised / goal) * 100) : 0; // 120%, 130% 가능
-    const progressWidth = Math.min(Math.max(percentage, 0), 100); // 바는 100%까지만
+    const percentage = goal > 0 ? Math.round((raised / goal) * 100) : 0;
+    const progressWidth = Math.min(Math.max(percentage, 0), 100);
+
+    const imageHtml = imageUrl
+      ? `<div class="team-image-wrap"><img class="team-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(itemName || teamName)}" loading="lazy"></div>`
+      : `<div class="team-image-wrap"><div class="team-image-placeholder">등록된 이미지가 없습니다</div></div>`;
 
     const card = document.createElement("div");
     card.className = "team-card";
     card.innerHTML = `
+      ${imageHtml}
+
       <div class="team-header">
         <div class="team-name">${escapeHtml(teamName)}</div>
         <span class="team-category">${escapeHtml(category)}</span>
@@ -465,7 +605,7 @@ function renderTeams(companyName) {
       <div class="investment-section">
         <div class="investment-notice">투자포인트(한번 투자하면 수정이 불가하니 신중히 투자해 주세요)</div>
         <div class="investment-input-group">
-          <input type="text" class="investment-input" placeholder="투자 포인트 입력" data-team="${escapeHtml(teamName)}">
+          <input type="text" class="investment-input" placeholder="투자 포인트 입력" data-team="${escapeHtml(teamName)}" inputmode="numeric">
           <button class="invest-btn" data-team="${escapeHtml(teamName)}">투자하기</button>
         </div>
         <div class="input-error" data-team="${escapeHtml(teamName)}"></div>
@@ -475,7 +615,6 @@ function renderTeams(companyName) {
     const input = card.querySelector(".investment-input");
     const errorDiv = card.querySelector(".input-error");
 
-    // 숫자만
     input.addEventListener("input", (e) => {
       const raw = e.target.value;
       const cleaned = raw.replace(/[^0-9]/g, "");
@@ -499,16 +638,25 @@ function renderTeams(companyName) {
 
 async function handleInvestment(companyName, teamName) {
   const input = document.querySelector(`.investment-input[data-team="${cssEscape(teamName)}"]`);
+  const button = document.querySelector(`.invest-btn[data-team="${cssEscape(teamName)}"]`);
   const errorDiv = document.querySelector(`.input-error[data-team="${cssEscape(teamName)}"]`);
   const value = (input?.value || "").trim();
 
-  if (!value) { errorDiv.textContent = "투자 포인트를 입력해주세요"; return; }
-  if (!/^\d+$/.test(value)) { errorDiv.textContent = "숫자만 입력해주세요"; return; }
+  if (!value) {
+    errorDiv.textContent = "투자 포인트를 입력해주세요";
+    return;
+  }
+  if (!/^\d+$/.test(value)) {
+    errorDiv.textContent = "숫자만 입력해주세요";
+    return;
+  }
 
   const amount = parseInt(value, 10);
-  if (amount <= 0) { errorDiv.textContent = "0보다 큰 금액을 입력해주세요"; return; }
+  if (amount <= 0) {
+    errorDiv.textContent = "0보다 큰 금액을 입력해주세요";
+    return;
+  }
 
-  // 잔액 체크
   const { spentByCompany } = computeAggregates();
   const company = state.companies.find(c => String(c["기업명"] ?? "").trim() === companyName);
   if (!company) return showToast("기업 정보를 찾을 수 없습니다", true);
@@ -516,24 +664,49 @@ async function handleInvestment(companyName, teamName) {
   const base = n(company["기본포인트"]);
   const spent = spentByCompany.get(companyName) || 0;
   const remain = base - spent;
-  if (amount > remain) return showToast("포인트가 부족합니다", true);
-
-  try {
-    const resp = await apiPost("invest", { companyName, teamName, amount });
-    if (!resp.success) throw new Error(resp.error || "invest failed");
-
-    // 성공 시 최신 재로딩(공유 반영)
-    await loadFromSheet();
-
-    input.value = "";
-    errorDiv.textContent = "";
-    renderCompanyPage(companyName);
-
-    showToast("투자가 완료되었습니다");
-  } catch (e) {
-    console.error(e);
-    showToast("투자에 실패했습니다", true);
+  if (amount > remain) {
+    showToast("포인트가 부족합니다", true);
+    return;
   }
+
+  button.disabled = true;
+  button.textContent = "처리중...";
+
+  await withLoading(async () => {
+    try {
+      const resp = await apiPost("invest", { companyName, teamName, amount });
+
+      if (!resp.success) {
+        if (resp.error === "insufficient points") {
+          showToast("포인트가 부족합니다", true);
+          await loadFromSheet();
+          await renderCompanyPage(companyName);
+          return;
+        }
+        if (resp.error === "company not found") {
+          showToast("기업 정보를 찾을 수 없습니다", true);
+          return;
+        }
+        if (resp.error === "team not found") {
+          showToast("팀 정보를 찾을 수 없습니다", true);
+          return;
+        }
+        throw new Error(resp.error || "invest failed");
+      }
+
+      await loadFromSheet();
+      input.value = "";
+      errorDiv.textContent = "";
+      await renderCompanyPage(companyName);
+      showToast("투자가 완료되었습니다");
+    } catch (e) {
+      console.error(e);
+      showToast("투자에 실패했습니다", true);
+    } finally {
+      button.disabled = false;
+      button.textContent = "투자하기";
+    }
+  }, "투자 반영중...");
 }
 
 function renderMyInvestSummary(companyName) {
@@ -554,7 +727,9 @@ function renderMyInvestSummary(companyName) {
   }
 
   const sumByTeam = new Map();
-  for (const inv of invs) sumByTeam.set(inv.team, (sumByTeam.get(inv.team) || 0) + inv.amt);
+  for (const inv of invs) {
+    sumByTeam.set(inv.team, (sumByTeam.get(inv.team) || 0) + inv.amt);
+  }
 
   wrap.style.display = "block";
   list.innerHTML = "";

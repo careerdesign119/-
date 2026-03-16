@@ -50,6 +50,15 @@
   <!-- Toast -->
   <div id="toast" class="toast"></div>
 
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">로딩중...</div>
+      <div class="loading-subtext">잠시만 기다려주세요</div>
+    </div>
+  </div>
+
   <!-- Admin Page -->
   <div id="adminPage" class="page" style="display:none;">
     <div class="container">
@@ -105,6 +114,7 @@
                 <th>카테고리</th>
                 <th>한줄소개</th>
                 <th>상세설명</th>
+                <th>이미지파일명</th>
                 <th>목표포인트</th>
                 <th>모인포인트</th>
                 <th>투자자수</th>
@@ -114,6 +124,7 @@
             <tbody></tbody>
           </table>
         </div>
+        <div class="hint">※ 이미지파일명은 구글드라이브 이미지 폴더 안 파일명과 정확히 같아야 합니다. 예: team1.jpg</div>
         <div class="hint">※ 모인포인트/투자자수는 <b>투자내역</b> 기준으로 자동 계산되어 수정할 수 없습니다.</div>
       </div>
 
@@ -139,7 +150,7 @@
         </div>
       </div>
 
-      <button id="saveAdminBtn" class="save-btn">수정</button>
+      <button id="saveAdminBtn" class="save-btn">저장</button>
     </div>
   </div>
 

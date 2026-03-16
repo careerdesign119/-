@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbzrwiW7dwp2pKJqoUEM1_wrU8y9d_4khtHEZKyhJfba4NzskN-3yKiiXnCOaNlsgj-Dow/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby0jkOfb5VADGhKuAH3LjCaCld_oJg03--LczFsa1KtRAU23CVVsAZwHKbfKjjxuJxLNg/exec";
 
 // ===== 전역 상태 =====
 let state = { companies: [], teams: [], investments: [] };
